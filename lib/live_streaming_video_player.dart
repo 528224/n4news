@@ -19,7 +19,7 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Force landscape + immersive mode
+    // Force fullscreen landscape
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
@@ -40,7 +40,7 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
 
-    // Reset orientation + UI overlays when leaving
+    // Restore portrait + system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -63,17 +63,41 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
     }
   }
 
+  Future<bool> _onWillPop() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Exit Stream?"),
+        content: const Text("Are you sure you want to stop watching?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Exit"),
+          ),
+        ],
+      ),
+    );
+    return shouldExit ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: _controller.value.isInitialized
-            ? AspectRatio(
-          aspectRatio: _controller.value.aspectRatio,
-          child: VideoPlayer(_controller),
-        )
-            : const CircularProgressIndicator(color: Colors.white),
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: _controller.value.isInitialized
+              ? AspectRatio(
+            aspectRatio: _controller.value.aspectRatio,
+            child: VideoPlayer(_controller),
+          )
+              : const CircularProgressIndicator(color: Colors.white),
+        ),
       ),
     );
   }
