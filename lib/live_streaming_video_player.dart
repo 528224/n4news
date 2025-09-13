@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:minimize_flutter_app/minimize_flutter_app.dart';
 import 'package:video_player/video_player.dart';
 
 class FullscreenLiveStreamPage extends StatefulWidget {
@@ -12,7 +15,11 @@ class FullscreenLiveStreamPage extends StatefulWidget {
 
 class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
     with WidgetsBindingObserver {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
+  final String streamUrl =
+      "https://livestream.flameinfosys.com/n4news/news/playlist.m3u8";
+
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -26,14 +33,32 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       DeviceOrientation.landscapeRight,
     ]);
 
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse("https://livestream.flameinfosys.com/n4news/news/playlist.m3u8"),
-    )
-      ..initialize().then((_) {
-        setState(() {});
-        _controller.play();
-      })
-      ..setLooping(true);
+    _initPlayer();
+  }
+
+  Future<void> _initPlayer() async {
+    setState(() => _isLoading = true);
+
+    // Dispose any existing controller
+    await _controller?.dispose();
+
+    final controller = VideoPlayerController.networkUrl(Uri.parse(streamUrl));
+
+    try {
+      await controller.initialize();
+      controller.setLooping(true);
+      controller.play();
+
+      if (mounted) {
+        setState(() {
+          _controller = controller;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Video init failed: $e");
+      if (mounted) setState(() => _isLoading = true);
+    }
   }
 
   @override
@@ -47,28 +72,33 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       DeviceOrientation.portraitDown,
     ]);
 
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
-      _controller.pause();
+      _controller?.pause();
     } else if (state == AppLifecycleState.resumed) {
-      _controller.play();
+      // Re-initialize fresh when resuming
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _initPlayer();
+      });
     }
   }
+
 
   Future<bool> _onWillPop() async {
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Exit Stream?"),
-        content: const Text("Are you sure you want to stop watching?"),
+        content: const Text("Do you want to minimize the app?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -76,12 +106,19 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("Exit"),
+            child: const Text("Yes"),
           ),
         ],
       ),
     );
-    return shouldExit ?? false;
+
+    if (shouldExit ?? false) {
+      // 🔑 Works exactly like pressing the Home button on Android
+      await MinimizeFlutterApp.minimizeApp();
+      return false; // don’t pop Flutter route manually
+    }
+
+    return false;
   }
 
   @override
@@ -91,12 +128,12 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Center(
-          child: _controller.value.isInitialized
-              ? AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          )
-              : const CircularProgressIndicator(color: Colors.white),
+          child: _isLoading || _controller == null
+              ? const CircularProgressIndicator(color: Colors.white)
+              : AspectRatio(
+            aspectRatio: _controller!.value.aspectRatio,
+            child: VideoPlayer(_controller!),
+          ),
         ),
       ),
     );

@@ -208,6 +208,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  minimize_flutter_app:
+    dependency: "direct main"
+    description:
+      name: minimize_flutter_app
+      sha256: "7cc9a496460902b82d483aff2e803986e39517a4af087adf462b52216223aaa1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   path:
     dependency: transitive
     description:
