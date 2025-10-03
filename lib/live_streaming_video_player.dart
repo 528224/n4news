@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:minimize_flutter_app/minimize_flutter_app.dart';
 import 'package:video_player/video_player.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class FullscreenLiveStreamPage extends StatefulWidget {
   const FullscreenLiveStreamPage({super.key});
@@ -49,6 +50,9 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       controller.setLooping(true);
       controller.play();
 
+      // Enable wakelock to prevent screen from sleeping during streaming
+      await WakelockPlus.enable();
+
       if (mounted) {
         setState(() {
           _controller = controller;
@@ -64,6 +68,9 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+
+    // Disable wakelock to allow screen to sleep again
+    WakelockPlus.disable();
 
     // Restore portrait + system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -84,10 +91,16 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
       _controller?.pause();
+      // Disable wakelock when app goes to background
+      WakelockPlus.disable();
     } else if (state == AppLifecycleState.resumed) {
       // Re-initialize fresh when resuming
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _initPlayer();
+        if (mounted) {
+          // Re-enable wakelock when app resumes
+          WakelockPlus.enable();
+          _initPlayer();
+        }
       });
     }
   }
