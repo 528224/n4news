@@ -103,7 +103,7 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       _showControls = true;
     });
     _controlsTimer?.cancel();
-    _controlsTimer = Timer(const Duration(seconds: 3), () {
+    _controlsTimer = Timer(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
           _showControls = false;

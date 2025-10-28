@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _showControls = true;
     });
     _controlsTimer?.cancel();
-    _controlsTimer = Timer(const Duration(seconds: 3), () {
+    _controlsTimer = Timer(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
           _showControls = false;
