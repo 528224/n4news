@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,8 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       "https://livestream.flameinfosys.com/n4news/news/playlist.m3u8";
 
   bool _isLoading = true;
+  bool _showControls = true;
+  Timer? _controlsTimer;
 
   @override
   void initState() {
@@ -51,6 +54,13 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       controller.setLooping(true);
       controller.play();
 
+      // Add listener to update UI when video playing state changes
+      controller.addListener(() {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+
       // Enable wakelock to prevent screen from sleeping during streaming
       await WakelockPlus.enable();
 
@@ -59,6 +69,7 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
           _controller = controller;
           _isLoading = false;
         });
+        _showControlsTemporarily();
       }
     } catch (e) {
       debugPrint("Video init failed: $e");
@@ -69,6 +80,7 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _controlsTimer?.cancel();
 
     // Pause and dispose video controller
     _controller?.pause();
@@ -85,6 +97,20 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
     ]);
 
     super.dispose();
+  }
+
+  void _showControlsTemporarily() {
+    setState(() {
+      _showControls = true;
+    });
+    _controlsTimer?.cancel();
+    _controlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showControls = false;
+        });
+      }
+    });
   }
 
   @override
@@ -144,32 +170,85 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: _isLoading || _controller == null
-              ? const CircularProgressIndicator(color: Colors.white)
-              : AspectRatio(
-            aspectRatio: _controller!.value.aspectRatio,
-            child: VideoPlayer(_controller!),
-          ),
-        ),
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: FloatingActionButton(
-            onPressed: () {
-              // Show system UI temporarily
-              SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-              // Restore portrait for home screen
-              SystemChrome.setPreferredOrientations([
-                DeviceOrientation.portraitUp,
-                DeviceOrientation.portraitDown,
-              ]);
-              // Navigate back to home screen
-              Navigator.of(context).pop();
-            },
-            heroTag: "back",
-            child: const Icon(Icons.arrow_back),
-            tooltip: 'Back',
-          ),
+        body: Stack(
+          children: [
+            // Video Player - Full Screen
+            GestureDetector(
+              onTap: () {
+                if (!_isLoading && _controller != null) {
+                  // Always toggle play/pause when tapping
+                  if (_controller!.value.isPlaying) {
+                    _controller!.pause();
+                  } else {
+                    _controller!.play();
+                  }
+                  setState(() {});
+                  // Show controls temporarily
+                  _showControlsTemporarily();
+                }
+              },
+              child: SizedBox.expand(
+                child: _isLoading || _controller == null
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
+                    : Center(
+                        child: AspectRatio(
+                          aspectRatio: _controller!.value.aspectRatio,
+                          child: VideoPlayer(_controller!),
+                        ),
+                      ),
+              ),
+            ),
+            // Back Button - Always visible
+            if (!_isLoading && _controller != null)
+              Positioned(
+                left: 16,
+                top: 16,
+                child: FloatingActionButton(
+                  onPressed: () {
+                    // Show system UI temporarily
+                    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+                    // Restore portrait for home screen
+                    SystemChrome.setPreferredOrientations([
+                      DeviceOrientation.portraitUp,
+                      DeviceOrientation.portraitDown,
+                    ]);
+                    // Navigate back to home screen
+                    Navigator.of(context).pop();
+                  },
+                  heroTag: "back",
+                  mini: true,
+                  backgroundColor: Colors.black54,
+                  child: const Icon(Icons.arrow_back),
+                ),
+              ),
+            // Play/Pause Button Overlay (Auto-hiding with animation)
+            if (!_isLoading && _controller != null)
+              AnimatedOpacity(
+                opacity: _showControls ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: IgnorePointer(
+                  ignoring: !_showControls,
+                  child: Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Icon(
+                        _controller!.value.isPlaying
+                            ? Icons.pause
+                            : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
