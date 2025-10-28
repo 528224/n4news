@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:minimize_flutter_app/minimize_flutter_app.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'home_screen.dart';
 
 class FullscreenLiveStreamPage extends StatefulWidget {
   const FullscreenLiveStreamPage({super.key});
@@ -146,6 +147,25 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
               : AspectRatio(
             aspectRatio: _controller!.value.aspectRatio,
             child: VideoPlayer(_controller!),
+          ),
+        ),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: FloatingActionButton(
+            onPressed: () {
+              // Show system UI temporarily
+              SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+              // Restore portrait for home screen
+              SystemChrome.setPreferredOrientations([
+                DeviceOrientation.portraitUp,
+                DeviceOrientation.portraitDown,
+              ]);
+              // Navigate back to home screen
+              Navigator.of(context).pop();
+            },
+            heroTag: "back",
+            child: const Icon(Icons.arrow_back),
+            tooltip: 'Back',
           ),
         ),
       ),
