@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 import 'live_streaming_video_player.dart';
 import 'dart:async';
 
@@ -12,6 +13,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  VideoPlayerController? _videoController;
+  final String _streamUrl = "https://livestream.flameinfosys.com/n4news/news/playlist.m3u8";
+  bool _isVideoLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -20,10 +25,14 @@ class _HomeScreenState extends State<HomeScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    _initVideoPlayer();
   }
 
   @override
   void dispose() {
+    // Pause and dispose video controller
+    _videoController?.pause();
+    _videoController?.dispose();
     // Allow all orientations when leaving
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -32,6 +41,28 @@ class _HomeScreenState extends State<HomeScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     super.dispose();
+  }
+
+  Future<void> _initVideoPlayer() async {
+    try {
+      // Dispose any existing controller
+      await _videoController?.dispose();
+      
+      final controller = VideoPlayerController.networkUrl(Uri.parse(_streamUrl));
+      await controller.initialize();
+      controller.setLooping(true);
+      
+      if (mounted) {
+        setState(() {
+          _videoController = controller;
+          _isVideoLoading = false;
+        });
+        controller.play();
+      }
+    } catch (e) {
+      debugPrint("Video init failed: $e");
+      if (mounted) setState(() => _isVideoLoading = false);
+    }
   }
 
   Future<void> _launchEmail() async {
@@ -60,59 +91,79 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40),
-              const Icon(
-                Icons.live_tv,
-                size: 120,
-                color: Colors.deepPurple,
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'N4 TV Stream',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 48),
-              SizedBox(
-                width: 250,
-                height: 60,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    // Set landscape orientation before navigating
-                    SystemChrome.setPreferredOrientations([
-                      DeviceOrientation.landscapeLeft,
-                      DeviceOrientation.landscapeRight,
-                    ]);
-                    // Small delay to ensure orientation is set
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    
-                    if (mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const FullscreenLiveStreamPage(),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.play_arrow, size: 32),
-                  label: const Text(
-                    'Watch TV',
-                    style: TextStyle(fontSize: 20),
+        child: Column(
+          children: [
+            // Video Player Section
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                children: [
+                  Container(
+                    color: Colors.black,
+                    child: _isVideoLoading || _videoController == null
+                        ? const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          )
+                        : VideoPlayer(_videoController!),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
+                  // Fullscreen Button Overlay
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        // Pause home video before navigating
+                        _videoController?.pause();
+                        
+                        // Set landscape orientation before navigating
+                        SystemChrome.setPreferredOrientations([
+                          DeviceOrientation.landscapeLeft,
+                          DeviceOrientation.landscapeRight,
+                        ]);
+                        // Small delay to ensure orientation is set
+                        await Future.delayed(const Duration(milliseconds: 100));
+                        
+                        if (mounted) {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const FullscreenLiveStreamPage(),
+                            ),
+                          );
+                          
+                          // Resume home video after returning from fullscreen
+                          if (mounted && _videoController != null) {
+                            _videoController!.play();
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.fullscreen, size: 20),
+                      label: const Text('Fullscreen'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.withOpacity(0.9),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 48),
+            ),
+            // Content Section
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 24),
+                  const Text(
+                    'N4 TV Stream',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
               // Contact Information
               const Text(
                 'Contact Us',
@@ -235,8 +286,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

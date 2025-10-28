@@ -70,6 +70,10 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
 
+    // Pause and dispose video controller
+    _controller?.pause();
+    _controller?.dispose();
+
     // Disable wakelock to allow screen to sleep again
     WakelockPlus.disable();
 
@@ -80,7 +84,6 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
       DeviceOrientation.portraitDown,
     ]);
 
-    _controller?.dispose();
     super.dispose();
   }
 
