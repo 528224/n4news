@@ -24,6 +24,7 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
   bool _isLoading = true;
   bool _showControls = true;
   Timer? _controlsTimer;
+  bool _lastActionWasPlay = true; // true => show play icon, false => show pause icon
 
   @override
   void initState() {
@@ -163,8 +164,10 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
                   // Always toggle play/pause when tapping
                   if (_controller!.value.isPlaying) {
                     _controller!.pause();
+                    _lastActionWasPlay = false; // show pause icon briefly
                   } else {
                     _controller!.play();
+                    _lastActionWasPlay = true; // show play icon briefly
                   }
                   setState(() {});
                   // Show controls temporarily
@@ -222,9 +225,9 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
                       ),
                       padding: const EdgeInsets.all(16),
                       child: Icon(
-                        _controller!.value.isPlaying
-                            ? Icons.pause
-                            : Icons.play_arrow,
+                        _lastActionWasPlay
+                            ? Icons.play_arrow
+                            : Icons.pause,
                         color: Colors.white,
                         size: 48,
                       ),

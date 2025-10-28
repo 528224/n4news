@@ -18,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isVideoLoading = true;
   bool _showControls = true;
   Timer? _controlsTimer;
+  bool _lastActionWasPlay = true; // true => show play icon, false => show pause icon
 
   @override
   void initState() {
@@ -129,8 +130,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Always toggle play/pause when tapping
                         if (_videoController!.value.isPlaying) {
                           _videoController!.pause();
+                        _lastActionWasPlay = false; // show pause icon briefly
                         } else {
                           _videoController!.play();
+                        _lastActionWasPlay = true; // show play icon briefly
                         }
                         setState(() {});
                         // Show controls temporarily
@@ -146,79 +149,67 @@ class _HomeScreenState extends State<HomeScreen> {
                           : VideoPlayer(_videoController!),
                     ),
                   ),
-                  // Controls Overlay (Play/Pause + Fullscreen)
+                  // Play/Pause Button Overlay (Auto-hiding)
                   if (!_isVideoLoading && _videoController != null)
                     AnimatedOpacity(
                       opacity: _showControls ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 300),
                       child: IgnorePointer(
                         ignoring: !_showControls,
-                        child: Positioned.fill(
+                        child: Center(
                           child: Container(
-                            color: Colors.transparent,
-                            child: Stack(
-                              children: [
-                                // Play/Pause Button Overlay
-                                Center(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    padding: const EdgeInsets.all(16),
-                                    child: Icon(
-                                      _videoController!.value.isPlaying
-                                          ? Icons.pause
-                                          : Icons.play_arrow,
-                                      color: Colors.white,
-                                      size: 48,
-                                    ),
-                                  ),
-                                ),
-                                // Fullscreen Button Overlay
-                                Positioned(
-                                  bottom: 8,
-                                  right: 8,
-                                  child: ElevatedButton.icon(
-                                    onPressed: () async {
-                                      // Pause home video before navigating
-                                      _videoController?.pause();
-                                      
-                                      // Set landscape orientation before navigating
-                                      SystemChrome.setPreferredOrientations([
-                                        DeviceOrientation.landscapeLeft,
-                                        DeviceOrientation.landscapeRight,
-                                      ]);
-                                      // Small delay to ensure orientation is set
-                                      await Future.delayed(const Duration(milliseconds: 100));
-                                      
-                                      if (mounted) {
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const FullscreenLiveStreamPage(),
-                                          ),
-                                        );
-                                        
-                                        // Resume home video after returning from fullscreen
-                                        if (mounted && _videoController != null) {
-                                          _videoController!.play();
-                                        }
-                                      }
-                                    },
-                                    icon: const Icon(Icons.fullscreen, size: 20),
-                                    label: const Text('Fullscreen'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.deepPurple.withOpacity(0.9),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: Icon(
+                              _lastActionWasPlay
+                                  ? Icons.play_arrow
+                                  : Icons.pause,
+                              color: Colors.white,
+                              size: 48,
                             ),
                           ),
                         ),
+                      ),
+                    ),
+                  // Fullscreen Button Overlay - Always visible
+                  if (!_isVideoLoading && _videoController != null)
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: FloatingActionButton(
+                        onPressed: () async {
+                          // Pause home video before navigating
+                          _videoController?.pause();
+                          
+                          // Set landscape orientation before navigating
+                          SystemChrome.setPreferredOrientations([
+                            DeviceOrientation.landscapeLeft,
+                            DeviceOrientation.landscapeRight,
+                          ]);
+                          // Small delay to ensure orientation is set
+                          await Future.delayed(const Duration(milliseconds: 100));
+                          
+                          if (mounted) {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const FullscreenLiveStreamPage(),
+                              ),
+                            );
+                            
+                            // Resume home video after returning from fullscreen
+                            if (mounted && _videoController != null) {
+                              _videoController!.play();
+                            }
+                          }
+                        },
+                        heroTag: "fullscreen",
+                        mini: true,
+                        backgroundColor: Colors.deepPurple.withOpacity(0.9),
+                        child: const Icon(Icons.fullscreen),
                       ),
                     ),
                 ],
