@@ -187,7 +187,7 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
                       ),
               ),
             ),
-            // Back Button - Always visible
+            // Back Button - Always visible and prominent
             if (!_isLoading && _controller != null)
               Positioned(
                 left: 16,
@@ -205,9 +205,9 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
                     Navigator.of(context).pop();
                   },
                   heroTag: "back",
-                  mini: true,
-                  backgroundColor: Colors.black54,
-                  child: const Icon(Icons.arrow_back),
+                  backgroundColor: Colors.black87,
+                  elevation: 6,
+                  child: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
               ),
             // Play/Pause Button Overlay (Auto-hiding with animation)
