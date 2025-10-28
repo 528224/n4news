@@ -3,7 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:minimize_flutter_app/minimize_flutter_app.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'home_screen.dart';
@@ -137,31 +136,16 @@ class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
 
 
   Future<bool> _onWillPop() async {
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Exit Stream?"),
-        content: const Text("Do you want to minimize the app?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("Yes"),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldExit ?? false) {
-      // 🔑 Works exactly like pressing the Home button on Android
-      await MinimizeFlutterApp.minimizeApp();
-      return false; // don’t pop Flutter route manually
-    }
-
-    return false;
+    // Show system UI temporarily
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Restore portrait for home screen
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    // Navigate back to home screen
+    Navigator.of(context).pop();
+    return false; // Return false to prevent the default pop behavior from executing
   }
 
   @override
