@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _launchEmail() async {
     final Uri emailUri = Uri(
       scheme: 'mailto',
-      path: 'lijokv39@gmail.com',
+      path: 'n4newstcr@gmail.com',
       query: 'subject=Contact from N4TV App',
     );
     if (await canLaunchUrl(emailUri)) {
@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _launchPhone() async {
-    final Uri phoneUri = Uri(scheme: 'tel', path: '+91974688999');
+    final Uri phoneUri = Uri(scheme: 'tel', path: '+919895070239');
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
     }
@@ -276,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               const Text(
-                                'lijokv39@gmail.com',
+                                'n4newstcr@gmail.com',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -332,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               const Text(
-                                '+91 9746889999',
+                                '+919895070239',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
