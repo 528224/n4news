@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android TV Banner - 320x180dp recommended -->
+<!-- Android TV Banner - 320x180dp (16:9 aspect ratio) -->
 <!-- This banner appears on Android TV home screen -->
+<!-- Note: This is a temporary XML drawable. For production, create a PNG image:
+     320x180px (mdpi), 640x360px (xhdpi), etc. and place in drawable-xhdpi/tv_banner.png -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Black background (320x180dp effective size) -->
     <item android:drawable="@android:color/black" />
     
     <!-- App icon/logo centered -->
