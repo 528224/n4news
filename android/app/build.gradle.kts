@@ -41,3 +41,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Android TV Leanback Support (optional but recommended)
+    implementation("androidx.leanback:leanback:1.0.0")
+}
