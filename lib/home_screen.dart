@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'live_streaming_video_player.dart';
 import 'dart:async';
 
@@ -12,7 +13,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   VideoPlayerController? _videoController;
   final String _streamUrl = "https://livestream.flameinfosys.com/n4news/news/playlist.m3u8";
   bool _isVideoLoading = true;
@@ -23,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Force portrait orientation
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -33,10 +35,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controlsTimer?.cancel();
     // Pause and dispose video controller
     _videoController?.pause();
     _videoController?.dispose();
+    // Disable wakelock to allow screen to sleep again
+    WakelockPlus.disable();
     // Allow all orientations when leaving
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -77,6 +82,9 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       });
       
+      // Enable wakelock to prevent screen from sleeping during streaming
+      await WakelockPlus.enable();
+      
       if (mounted) {
         setState(() {
           _videoController = controller;
@@ -88,6 +96,28 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       debugPrint("Video init failed: $e");
       if (mounted) setState(() => _isVideoLoading = false);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _videoController?.pause();
+      // Disable wakelock when app goes to background
+      WakelockPlus.disable();
+    } else if (state == AppLifecycleState.resumed) {
+      // Re-initialize fresh when resuming
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          // Re-enable wakelock when app resumes
+          WakelockPlus.enable();
+          _initVideoPlayer();
+        }
+      });
     }
   }
 
@@ -130,10 +160,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Always toggle play/pause when tapping
                         if (_videoController!.value.isPlaying) {
                           _videoController!.pause();
-                        _lastActionWasPlay = false; // show pause icon briefly
+                          _lastActionWasPlay = false; // show pause icon briefly
+                          // Disable wakelock when video is paused
+                          WakelockPlus.disable();
                         } else {
                           _videoController!.play();
-                        _lastActionWasPlay = true; // show play icon briefly
+                          _lastActionWasPlay = true; // show play icon briefly
+                          // Enable wakelock when video is playing
+                          WakelockPlus.enable();
                         }
                         setState(() {});
                         // Show controls temporarily
