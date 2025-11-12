@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'home_screen.dart';
+import 'main.dart';
 
 class FullscreenLiveStreamPage extends StatefulWidget {
   const FullscreenLiveStreamPage({super.key});
@@ -18,12 +19,6 @@ class FullscreenLiveStreamPage extends StatefulWidget {
 class _FullscreenLiveStreamPageState extends State<FullscreenLiveStreamPage>
     with WidgetsBindingObserver {
   VideoPlayerController? _controller;
-  // final String streamUrl =
-  //     "https://livestream.flameinfosys.com/n4news/news/playlist.m3u8";
-
-  final String streamUrl =
-      "https://g4wlkjrad23a-hls-live.5centscdn.com/n4news/532c28d5412dd75bf975fb951c740a30.sdp/playlist.m3u8";
-
   bool _isLoading = true;
   bool _showControls = true;
   Timer? _controlsTimer;

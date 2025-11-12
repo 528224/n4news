@@ -6,6 +6,8 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'live_streaming_video_player.dart';
 import 'dart:async';
 
+import 'main.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,7 +17,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   VideoPlayerController? _videoController;
-  final String _streamUrl = "https://livestream.flameinfosys.com/n4news/news/playlist.m3u8";
+  // final String _streamUrl = "https://livestream.flameinfosys.com/n4news/news/playlist.m3u8";
+  final String _streamUrl = streamUrl;
   bool _isVideoLoading = true;
   bool _showControls = true;
   Timer? _controlsTimer;

@@ -6,6 +6,8 @@ void main() {
   runApp(const MyApp());
 }
 
+const streamUrl = "https://g4wlkjrad23a-hls-live.5centscdn.com/n4news/532c28d5412dd75bf975fb951c740a30.sdp/playlist.m3u8";
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
